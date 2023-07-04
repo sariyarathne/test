@@ -1,0 +1,547 @@
+---
+databaseChangeLog:
+  # create customer_info table and loading data from a file
+  - changeSet:
+      id: create_customer_info_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: customer_info
+            columns:
+              - column:
+                  name: customer_info_id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: customer_id
+                  type: VARCHAR(45)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: opco_id
+                  type: VARCHAR(30)
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: create_customer_sequence
+      author: author's_name
+      changes:
+        - createSequence:
+            dataType: int
+            incrementBy: 1
+            sequenceName: customer_sequence
+            startValue: 1
+  - changeSet:
+      id: create_customer_unique_constrain
+      author: author's_name
+      changes:
+        - addUniqueConstraint:
+            columnNames: customer_id,opco_id
+            tableName: customer_info
+            validate: true
+            disabled: false
+
+  - changeSet:
+      id: create_customer_id_default
+      author: author's_name
+      changes:
+        - addDefaultValue:
+            columnName: customer_info_id
+            tableName: customer_info
+            defaultValueSequenceNext: customer_sequence
+
+  # create enrollment table and loading data from a file
+  - changeSet:
+      id: create_enrollment_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: enrollment
+            columns:
+              - column:
+                  name: enrollment_id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: customer_id
+                  type: INTEGER
+                  constraints:
+                    foreignKeyName: enrollment_customer_info_id_fk
+                    references: customer_info(customer_info_id)
+                    nullable: false
+              - column:
+                  name: last_modified_date
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enrollment
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: raw_payload
+                  type: VARCHAR(65535)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: free_trial_end_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: fee_waiver_end_date
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_trial_completed
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_fee_waive
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: create_enrollment_sequence
+      author: author's_name
+      changes:
+        - createSequence:
+            dataType: int
+            incrementBy: 1
+            sequenceName: enrollment_sequence
+            startValue: 1
+
+  - changeSet:
+      id: create_enrollment_id_default
+      author: author's_name
+      changes:
+        - addDefaultValue:
+            columnName: enrollment_id
+            tableName: enrollment
+            defaultValueSequenceNext: enrollment_sequence
+
+
+  # create enrollment_history and loading data from a file
+  - changeSet:
+      id: create_enrollment_history_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: enrollment_history
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: enrollment_id
+                  type: INTEGER
+                  constraints:
+                    foreignKeyName: enrollment_history_enrollment_fk
+                    references: enrollment(enrollment_id)
+                    nullable: false
+              - column:
+                  name: enrollment_type
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_date
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: raw_payload
+                  type: VARCHAR(65535)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: is_fee_waive
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: create_enrollment_history_sequence
+      author: author's_name
+      changes:
+        - createSequence:
+            dataType: int
+            incrementBy: 1
+            sequenceName: enrollment_history_sequence
+            startValue: 1
+
+  - changeSet:
+      id: create_enrollment_history_id_default
+      author: author's_name
+      changes:
+        - addDefaultValue:
+            columnName: id
+            tableName: enrollment_history
+            defaultValueSequenceNext: enrollment_history_sequence
+
+
+  # create reward_source_info table and loading data from a file
+  - changeSet:
+      id: create_reward_source_info_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: reward_source_info
+            columns:
+              - column:
+                  name: reward_source_id
+                  type: VARCHAR(32)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: reward_source
+                  type: VARCHAR(32)
+
+
+  # create promo_code table
+  - changeSet:
+      id: create_promo_code_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: promo_code
+            columns:
+              - column:
+                  name: uuid
+                  type: VARCHAR(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(32)
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+              - column:
+                  name: description
+                  type: VARCHAR(100)
+              - column:
+                  name: reward
+                  type: NUMERIC
+              - column:
+                  name: reward_currency
+                  type: VARCHAR(5)
+              - column:
+                  name: minimum_bucket_size
+                  type: NUMERIC
+              - column:
+                  name: status
+                  type: VARCHAR(10)
+              - column:
+                  name: generated_date
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: code_start_date
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: code_end_date
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: last_modified_date
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: modified_source
+                  type: VARCHAR(15)
+              - column:
+                  name: reward_source_id
+                  type: VARCHAR(32)
+                  constraints:
+                    foreignKeyName: promo_codes_reward_source_info_fk
+                    references: reward_source_info(reward_source_id)
+                    nullable: false
+              - column:
+                  name: customer_info_id
+                  type: INTEGER
+                  constraints:
+                    foreignKeyName: promo_codes_customer_info_fk
+                    references: customer_info(customer_info_id)
+                    nullable: false
+
+
+  # create promo_code_history table
+  - changeSet:
+      id: create_promo_code_history_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: promo_code_history
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: uuid
+                  type: VARCHAR(36)
+                  constraints:
+                    foreignKeyName: promo_code_history_promo_codes_fk
+                    references: promo_code(uuid)
+                    nullable: false
+              - column:
+                  name: status
+                  type: VARCHAR(10)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: modified_source
+                  type: VARCHAR(15)
+              - column:
+                  name: created_date
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: create_promo_code_history_sequence
+      author: author's_name
+      changes:
+        - createSequence:
+            dataType: int
+            incrementBy: 1
+            sequenceName: promo_code_history_sequence
+            startValue: 1
+
+  - changeSet:
+      id: create_promo_code_history_id_default
+      author: author's_name
+      changes:
+        - addDefaultValue:
+            columnName: id
+            tableName: promo_code_history
+            defaultValueSequenceNext: promo_code_history_sequence
+
+  # create Perks_tracking_data and loading data from a file
+  - changeSet:
+      id: create_perks_tracking_data_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: perks_tracking_data
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: enrollment_id
+                  type: INTEGER
+                  constraints:
+                    foreignKeyName: perks_tracking_data_enrollment_fk
+                    references: enrollment(enrollment_id)
+                    nullable: false
+              - column:
+                  name: start_date
+                  type: DATE
+              - column:
+                  name: end_date
+                  type: DATE
+              - column:
+                  name: tracking_state
+                  type: VARCHAR(32)
+              - column:
+                  name: created_date
+                  type: TIMESTAMP WITH TIME ZONE
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: perks_tracking_data_sequence
+      author: author's_name
+      changes:
+        - createSequence:
+            dataType: int
+            incrementBy: 1
+            sequenceName: perks_tracking_data_sequence
+            startValue: 1
+
+  - changeSet:
+      id: create_perks_tracking_data_id_default
+      author: author's_name
+      changes:
+        - addDefaultValue:
+            columnName: id
+            tableName: perks_tracking_data
+            defaultValueSequenceNext: perks_tracking_data_sequence
+
+
+  # create support_request table and loading data from a file
+  - changeSet:
+      id: create_support_request_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: support_request
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: enrollment_id
+                  type: INTEGER
+                  constraints:
+                    foreignKeyName: support_request_enrollment_fk
+                    references: enrollment(enrollment_id)
+                    nullable: false
+              - column:
+                  name: sr_reference
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sr_created_date
+                  type: DATE
+                  constraints:
+                    nullable: false
+  - changeSet:
+      id: create_support_request_sequence
+      author: author's_name
+      changes:
+        - createSequence:
+            dataType: int
+            incrementBy: 1
+            sequenceName: support_request_sequence
+            startValue: 1
+
+  - changeSet:
+      id: create_support_request_id_default
+      author: author's_name
+      changes:
+        - addDefaultValue:
+            columnName: id
+            tableName: support_request
+            defaultValueSequenceNext: support_request_sequence
+
+
+  # create offer_fulfillment_event table and loading data from a file
+  - changeSet:
+      id: create_offer_fulfillment_event_table
+      author: author's_name
+      changes:
+        - createTable:
+            tableName: offer_fulfillment_event_info
+            columns:
+              - column:
+                  name: id
+                  type: INTEGER
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: offer_id
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: campaign_id
+                  type: INTEGER
+                  constraints:
+                    nullable: true
+              - column:
+                  name: campaign_name
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: customer_number
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: opco_number
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reward_source
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: offer_name
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: reward_value
+                  type: REAL
+                  constraints:
+                    nullable: true
+              - column:
+                  name: offer_description
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: offer_end_date
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: success
+                  type: BOOLEAN
+                  constraints:
+                    nullable: false
+              - column:
+                  name: uuid
+                  type: VARCHAR(36)
+                  constraints:
+                    foreignKeyName: offer_fulfillment_event_promo_codes_fk
+                    references: promo_code(uuid)
+                    nullable: true
+  - changeSet:
+      id: create_offer_fulfillment_event_sequence
+      author: author's_name
+      changes:
+        - createSequence:
+            dataType: int
+            incrementBy: 1
+            sequenceName: offer_fulfillment_event_sequence
+            startValue: 1
+
+  - changeSet:
+      id: create_offer_fulfillment_event_id_default
+      author: author's_name
+      changes:
+        - addDefaultValue:
+            columnName: id
+            tableName: offer_fulfillment_event_info
+            defaultValueSequenceNext: offer_fulfillment_event_sequence
+
+  - changeSet:
+      id: alter_offer_fulfillment_event_table
+      author: author's_name
+      changes:
+        - modifyDataType:
+            columnName: campaign_name
+            newDataType: VARCHAR
+            tableName: offer_fulfillment_event_info
+        - modifyDataType:
+            columnName: offer_name
+            newDataType: VARCHAR(255)
+            tableName: offer_fulfillment_event_info
+        - modifyDataType:
+            columnName: offer_description
+            newDataType: VARCHAR(1020)
+            tableName: offer_fulfillment_event_info

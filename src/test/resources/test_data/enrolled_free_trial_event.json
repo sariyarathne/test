@@ -1,0 +1,26 @@
+{
+  "OldFields": {},
+  "NewFields": {
+    "Perks_Enrollment_Date__c": "2022-06-12T00:00:00+00:00",
+    "Sysco_Perks__c": "Enrolled free trial",
+    "Status__c": "Active",
+    "Account_ID__c": "022-951290",
+    "Name": "DEL MONTE FRESH PRODUCE CO",
+    "Id": "0014400001n4CBZAA2"
+  },
+  "ChangeEventHeader": {
+    "recordIds": [
+      "0014400001n4CBZAA2"
+    ],
+    "entityName": "Account",
+    "changeType": "scheduled:Perks_Enrollment_Date__c",
+    "changedFields": [
+      "Id",
+      "Name",
+      "Account_ID__c",
+      "Status__c",
+      "Sysco_Perks__c",
+      "Perks_Enrollment_Date__c"
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+version: "3.8"
+services:
+  postgres-db:
+    #image: 481241272663.dkr.ecr.us-east-1.amazonaws.com/personalization_pipeline:postgresql-13.4.0
+    image: bitnami/postgresql:13.4.0
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: sampledb_user
+      POSTGRES_DB: sampledb
+    ports:
+      - "5432"
+    volumes:
+      - postgres-data:/data/db
+    network_mode: 'host'
+volumes:
+  maven-repository:
+    name: maven-repository
+  postgres-data:
+    name: postgres-data
+  gradle-cache:
+    name: gradle-cache
+  terraform-plugin-cache:
+    name: terraform-plugin-cache
+

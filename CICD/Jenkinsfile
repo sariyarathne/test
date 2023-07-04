@@ -1,0 +1,169 @@
+@Library('dim_jenkins_shared_library') _
+pipeline {
+
+    agent {
+        node {
+            label 'dim-jenkins-cloud-build-agent-jdk17'
+        }
+
+    }
+
+    environment {
+        SONAR_USER_TOKEN = credentials('project-bt-perso-analytics-token')
+        ECR_DOCKER_URL = "513866796971.dkr.ecr.us-east-1.amazonaws.com"
+
+    }
+
+    parameters {
+        string(name: 'SONAR_HOST_URL', defaultValue: 'https://cqc.cloud.sysco.net', description: 'SonarQube host URL')
+        string(name: 'AWS_REGION_NON_PROD', defaultValue: 'us-east-1', description: 'AWS region for non-prod deployments (dev, qa)')
+        string(name: 'CHANGE_ID', defaultValue: "", description: 'changeID')
+        string(name: 'IMAGE_NAME', defaultValue: "bt-perso-analitics-ecr", description: 'image name')
+        string(name: 'AWS_ACCOUNT_ID', defaultValue: "513866796971", description: 'aws account id')
+        string(name: 'APPLICATION_NAME', defaultValue: "bt-perso-analytics", description: 'application name for build args')
+        string(name: 'PROFILE', defaultValue: 'test', description: 'spring profile')
+        choice(name: 'APPLICATION', choices: ['yes', 'no'], description: 'Select Yes If ECS Application Pipeline')
+        booleanParam(name: 'SKIP_DEPLOY', defaultValue: true, description: 'Skip deploy into any environment')
+        choice(name: 'DEPLOYMENT_CHOICE', choices: ['dev', 'qa', 'stg'], description: 'Deploy to')
+        choice(name: 'TERRAFORM_ACTION', choices: ['apply', 'destroy'], description: 'terraform action')
+    }
+
+    options {
+        disableConcurrentBuilds()
+        ansiColor('xterm')
+    }
+
+ stages{
+     stage('Authenticate_to_ECR'){
+         steps {
+             authenticateForEcr(
+
+                 ECR_DOCKER_CREDENTIALS_USR: 'AWS',
+                 ECR_DOCKER_CREDENTIALS_PSW: '481241272663.dkr.ecr.us-east-1.amazonaws.com'
+
+             )
+         }
+     }
+    stage('Build_stage'){
+        steps {
+                persoUnitTestDb(
+                    profile: params.PROFILE
+                )
+
+                bootstrapBuild(
+                    profile: params.PROFILE
+                )
+        }
+    }
+    stage('unit_test'){
+        steps {
+            script{
+            if ( GIT_BRANCH.matches("feature.*") || GIT_BRANCH.matches("develop.*")){
+                unitTestRun(
+                    profile: params.PROFILE
+                )
+                }
+            }
+        }
+    }
+    stage('sonar_publish'){
+        steps{
+            script{
+            if ( GIT_BRANCH.matches("feature.*") || GIT_BRANCH.matches("develop.*")){
+                sonarQubePublish(
+                    SONAR_HOST_URL: params.SONAR_HOST_URL,
+                    SONAR_USER_TOKEN: env.SONAR_USER_TOKEN,
+                    CHANGE_ID: params.CHANGE_ID,
+                    branchName: env.BRANCH_NAME,
+                    profile: params.PROFILE
+                )
+                }
+            }
+        }
+     }
+    stage('docker_build'){
+         when {
+             allOf {
+                   not { expression { return params.SKIP_DEPLOY } }
+             }
+         }
+        steps {
+            dockerBuildAndPublish(
+             application: params.APPLICATION,
+             repository_url: env.ECR_DOCKER_URL,
+             region: params.AWS_REGION_NON_PROD,
+             image_name: params.IMAGE_NAME,
+             environment: params.DEPLOYMENT_CHOICE,
+             app_name: params.APPLICATION_NAME,
+             awsAccountId: params.AWS_ACCOUNT_ID,
+             awsRoleName: 'Dim-Jenkins-Cross-Account-Role'
+             )
+        }
+    }
+    stage('dev_deployment'){
+        when {
+            allOf {
+                  not { expression { return params.SKIP_DEPLOY } }
+                  expression { GIT_BRANCH.matches("feature.*") || GIT_BRANCH.matches("develop.*") }
+                  environment name: 'DEPLOYMENT_CHOICE', value: 'dev'
+            }
+        }
+        steps {
+            script{
+                ecsTerrafoamAction(
+                    application: params.APPLICATION,
+                    awsAccountId: params.AWS_ACCOUNT_ID,
+                    varFile: params.DEPLOYMENT_CHOICE+'/bt-perso-analitics.tfvars',
+                    awsRoleName: 'Dim-Jenkins-Cross-Account-Role',
+                    path: params.DEPLOYMENT_CHOICE,
+                    action: params.TERRAFORM_ACTION
+
+                    )
+                }
+            }
+        }
+    stage('qa_deployment'){
+        when {
+            allOf {
+                  not { expression { return params.SKIP_DEPLOY } }
+                  expression { GIT_BRANCH.matches("release.*")}
+                  environment name: 'DEPLOYMENT_CHOICE', value: 'qa'
+                    }
+                }
+        steps {
+            script{
+                ecsTerrafoamAction(
+                    application: params.APPLICATION,
+                    awsAccountId: params.AWS_ACCOUNT_ID,
+                    varFile: params.DEPLOYMENT_CHOICE+'/bt-perso-analitics.tfvars',
+                    awsRoleName: 'Dim-Jenkins-Cross-Account-Role',
+                    path: params.DEPLOYMENT_CHOICE,
+                    action: params.TERRAFORM_ACTION
+
+                    )
+                }
+            }
+        }
+    stage('stg_deployment'){
+        when {
+            allOf {
+                  not { expression { return params.SKIP_DEPLOY } }
+                  expression { GIT_BRANCH.matches("release.*")}
+                  environment name: 'DEPLOYMENT_CHOICE', value: 'stg'
+                        }
+                }
+        steps {
+            script{
+                ecsTerrafoamAction(
+                    application: params.APPLICATION,
+                    awsAccountId: params.AWS_ACCOUNT_ID,
+                    varFile: params.DEPLOYMENT_CHOICE+'/bt-perso-analitics.tfvars',
+                    awsRoleName: 'Dim-Jenkins-Cross-Account-Role',
+                    path: params.DEPLOYMENT_CHOICE,
+                    action: params.TERRAFORM_ACTION
+                    )
+                    }
+                }
+            }
+    }
+}

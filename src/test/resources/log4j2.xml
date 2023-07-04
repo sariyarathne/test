@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Properties>
+        <Property name="logPattern">[%d{yyyy-MM-dd HH:mm:ss.SSSS}], [%X{Syy-Correlation-Id}], [%X{Syy-Request-Id}], %-5p, %C %t - %m%n</Property>
+        <Property name="selectedAppender">stdout_${env:LOG4J_LAYOUT:-json}</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="stdout_json" target="SYSTEM_OUT">
+            <JsonLayout compact="true" eventEol="true" properties="false" locationInfo="false" objectMessageAsJsonObject="true"
+                        includeStacktrace="true">
+                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd HH:mm:ss.SSSS}"/>
+                <KeyValuePair key="Syy-Correlation-Id" value="$${ctx:Syy-Correlation-Id}"/>
+                <KeyValuePair key="Syy-Request-Id" value="$${ctx:Syy-Request-Id}"/>
+                <KeyValuePair key="dd.trace_id" value="$${ctx:dd.trace_id}"/>
+                <KeyValuePair key="dd.span_id" value="$${ctx:dd.span_id}"/>
+                <KeyValuePair key="Syy-Operation-Id" value="$${ctx:Syy-Operation-Id}"/>
+                <KeyValuePair key="Syy-Operation-State" value="$${ctx:Syy-Operation-State}"/>
+            </JsonLayout>
+        </Console>
+        <Console name="stdout_plain" target="SYSTEM_OUT">
+            <PatternLayout pattern="${logPattern}"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Root level="INFO" includeLocation="true">
+            <AppenderRef ref="${selectedAppender}"/>
+        </Root>
+    </Loggers>
+</Configuration>

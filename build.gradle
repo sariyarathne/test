@@ -1,0 +1,157 @@
+plugins {
+	id 'org.springframework.boot' version '2.6.3'
+	id 'io.spring.dependency-management' version '1.0.11.RELEASE'
+	id "com.gorylenko.gradle-git-properties" version "2.4.0"
+	id 'org.sonarqube' version '3.3'
+	id 'java'
+	id 'jacoco'
+}
+
+group = 'com.sysco'
+version = '0.0.1'
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+compileJava.options.encoding = "UTF-8"
+compileTestJava.options.encoding = "UTF-8"
+
+repositories {
+    mavenCentral()
+	maven {
+		url "https://packages.confluent.io/maven/"
+	}
+}
+
+jar {
+	enabled = false
+}
+
+configurations {
+	all {
+		// exclude logback from all the dependencies to use log4j2 as the standard
+		exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+	}
+}
+
+ext.getCurrentBranchName = {
+	new ByteArrayOutputStream().withStream { os ->
+		exec {
+			executable = "git"
+			args = ["rev-parse", "--abbrev-ref", "HEAD"]
+			standardOutput = os
+		}
+		return os.toString()
+	}
+}
+
+ext.getSonarProperties = {
+	def props = new Properties()
+	file("sonar-project.properties").withInputStream { props.load(it) }
+	return props
+}
+
+sonarqube {
+	def props = new Properties()
+	file('sonar-project.properties').withInputStream { props.load(it) }
+	properties {
+		props.each { prop ->
+			property "${prop.key}", "${prop.value}"
+		}
+	}
+}
+project.tasks["sonarqube"].dependsOn "compileJava"
+project.tasks["sonarqube"].dependsOn "jacocoTestReport"
+
+jacocoTestReport {
+	afterEvaluate {
+		classDirectories.setFrom(files(classDirectories.files.collect {
+			fileTree(dir: it, exclude: [
+					"com/sysco/**/dto/*",
+					"com/sysco/**/controller/GlobalExceptionHandler*",
+			])
+		}))
+	}
+	reports {
+		xml.required = true
+		html.destination file("${buildDir}/reports/coverage")
+		xml.destination file("${buildDir}/reports/jacoco.xml")
+	}
+}
+jacoco {
+	toolVersion = "0.8.7"
+}
+
+dependencies {
+
+	// spring-boot-starter-* dependencies
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	implementation 'org.springframework.kafka:spring-kafka'
+
+	// database related dependencies
+	implementation group: 'org.liquibase', name: 'liquibase-core', version: '4.7.1'
+	implementation group: 'com.zaxxer', name: 'HikariCP', version: '5.0.1'
+	implementation group: 'org.postgresql', name: 'postgresql', version: '42.3.1'
+
+	// webflux dependencies
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
+	testImplementation 'io.projectreactor:reactor-test'
+
+	//Security dependency
+	implementation group: 'org.springframework.security', name: 'spring-security-config'
+	implementation group: 'org.springframework.security', name: 'spring-security-oauth2-client', version: '5.4.1'
+	implementation group: 'com.auth0', name: 'auth0-spring-security-api', version: '1.3.0'
+	implementation group: 'com.auth0', name: 'java-jwt', version: '3.10.0'
+
+	//Batch dependencies
+	implementation 'org.springframework.boot:spring-boot-starter-batch'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+
+	// lombok dependencies
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+
+	// model mapper dependencies
+	implementation group: 'org.modelmapper', name: 'modelmapper', version: '3.0.0'
+
+	// open-api spring doc
+	implementation group: 'org.springdoc', name: 'springdoc-openapi-ui', version: '1.6.5'
+
+	// spring-cloud dependencies
+	implementation group: 'io.awspring.cloud', name: 'spring-cloud-aws-autoconfigure', version: '2.4.0'
+	implementation group: 'io.awspring.cloud', name: 'spring-cloud-starter-aws-parameter-store-config', version: '2.4.0'
+
+	// logging dependencies
+	implementation group: 'org.springframework.boot', name: 'spring-boot-starter-log4j2', version: '2.6.3'
+	implementation group: 'com.lmax', name: 'disruptor', version: '3.4.4'
+
+	// apache commons dependencies
+	implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.12.0'
+
+	//confluent
+	implementation 'io.confluent:kafka-avro-serializer:7.1.0'
+
+	// testing related dependencies
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testImplementation 'org.springframework.kafka:spring-kafka-test'
+}
+
+tasks.named('test') {
+	finalizedBy jacocoTestReport
+	useJUnitPlatform()
+}
+
+test.testLogging {
+	exceptionFormat "full"
+	// enable/disable the following options to show/hide the log messages during test execution, important during qcenter submissions
+	events "passed", "skipped", "failed"
+	showExceptions true
+	showCauses true
+	showStackTraces false
+	showStandardStreams false
+}
